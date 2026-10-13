@@ -206,6 +206,8 @@ function finishTest() {
 }
 
 load(function () { render(); tick(); setInterval(tick, 30000); });
-</script>
+try { var l = localStorage.getItem('chronicles'); if (l) state = JSON.parse(l); } catch (e) {}
+render(); tick(); setInterval(tick, 30000);
+load(function () { render(); });
 </body>
 </html>
