@@ -54,7 +54,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <div id="list"></div>
 <p class="note">Стесняетесь камеры? Любое задание можно выполнить голосом или фото.</p>
 
-<script src="https://cdn.jsdelivr.net/npm/@vkontakte/vk-bridge@2.15.2/dist/browser.min.js"></script>
+
 <script>
 /* ===== НАСТРОЙКИ (меняйте здесь) ===== */
 var CONFIG = {
@@ -205,9 +205,18 @@ function finishTest() {
   state.hero = best; state.done[1] = true; save(); render();
 }
 
-load(function () { render(); tick(); setInterval(tick, 30000); });
 try { var l = localStorage.getItem('chronicles'); if (l) state = JSON.parse(l); } catch (e) {}
 render(); tick(); setInterval(tick, 30000);
-load(function () { render(); });
+(function (urls) {
+  function next() {
+    var u = urls.shift(); if (!u) return;
+    var s = document.createElement('script'); s.src = u;
+    s.onload = function () { bridge = window.vkBridge || null; load(function () { render(); }); };
+    s.onerror = next;
+    document.head.appendChild(s);
+  }
+  next();
+})(['https://cdn.jsdelivr.net/npm/@vkontakte/vk-bridge@2.15.2/dist/browser.min.js','https://unpkg.com/@vkontakte/vk-bridge@2.15.2/dist/browser.min.js']);
+</script>
 </body>
 </html>
