@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Хроники Новогодья</title>
+<style>
+:root{--ink:#0c1230;--ink2:#17214d;--parch:#f1e3c0;--parch2:#e6d2a2;--gold:#d9a93f;--wax:#a8322d;--text:#2b2113;--pale:#b8c0e0}
+*{box-sizing:border-box}
+html{background:var(--ink)}
+body{margin:0 auto;max-width:560px;min-height:100vh;padding:calc(18px + env(safe-area-inset-top,0px)) 14px calc(40px + env(safe-area-inset-bottom,0px));
+ font:17px/1.55 "Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;color:var(--pale);
+ background:
+  radial-gradient(1.5px 1.5px at 12% 8%,#fff8 50%,transparent),radial-gradient(1.5px 1.5px at 78% 14%,#fff7 50%,transparent),
+  radial-gradient(1px 1px at 40% 30%,#fff6 50%,transparent),radial-gradient(1.5px 1.5px at 90% 40%,#fff6 50%,transparent),
+  radial-gradient(1px 1px at 22% 62%,#fff6 50%,transparent),radial-gradient(1.5px 1.5px at 65% 78%,#fff5 50%,transparent),
+  linear-gradient(180deg,var(--ink2),var(--ink) 55%)}
+h1{margin:6px 0 4px;text-align:center;font-weight:400;font-size:31px;line-height:1.15;color:var(--gold);letter-spacing:.02em}
+.lead{text-align:center;font-style:italic;margin:0 0 20px}
+.clocks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.clock{border:1px solid #d9a93f66;border-radius:12px;padding:10px 8px;text-align:center;background:#0c123099}
+.clock b{display:block;font-weight:400;font-size:21px;color:var(--parch);font-variant-numeric:tabular-nums}
+.clock small{font-size:14px}
+.hero{border:1px solid var(--gold);border-radius:12px;padding:10px 14px;margin-bottom:18px;text-align:center;color:var(--parch)}
+.hero.empty{border-style:dashed;color:var(--pale)}
+.scroll{position:relative;background:var(--parch);color:var(--text);border-radius:6px 6px 14px 14px;padding:16px 16px 14px;margin:0 0 16px;
+ box-shadow:0 0 0 3px var(--parch2) inset,0 8px 18px #0006}
+.scroll.done{opacity:.72}
+.scroll h2{margin:0 0 2px;font-size:21px;font-weight:700;line-height:1.2}
+.act{font-size:14px;color:#7a5a1a;font-style:italic;margin:0 0 8px}
+.how{display:inline-block;font-size:14px;border:1px solid #7a5a1a;border-radius:20px;padding:0 10px;margin:0 0 8px;color:#5a410f}
+.scroll p{margin:0 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-size:16px;border:0;border-radius:8px;padding:10px 14px;cursor:pointer;background:var(--text);color:var(--parch);min-height:44px}
+button.alt{background:transparent;color:var(--text);border:1.5px solid var(--text)}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.seal{display:flex;align-items:center;gap:12px;border:1px dashed #d9a93f77;border-radius:12px;padding:12px 14px;margin:0 0 16px;color:var(--pale)}
+.wax{flex:none;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d4574e,var(--wax) 60%,#6e1f1b);box-shadow:0 2px 5px #0008;display:grid;place-items:center;color:#f5c9a8;font-size:18px}
+.q{margin:10px 0;border-top:1px solid #7a5a1a55;padding-top:10px}
+.q strong{display:block;margin-bottom:6px}
+.opt{display:block;width:100%;text-align:left;margin:0 0 6px;background:#fff6;color:var(--text);border:1.5px solid #7a5a1a88}
+.opt.sel{background:var(--text);color:var(--parch)}
+.note{font-size:15px;text-align:center;margin:22px 0 0;color:var(--pale)}
+@media (prefers-reduced-motion:no-preference){.scroll.fresh{animation:unroll .5s ease-out}}
+@keyframes unroll{from{transform:scaleY(.85);opacity:0}to{transform:none;opacity:1}}
+</style>
+</head>
+<body>
+<h1>Хроники Новогодья</h1>
+<p class="lead">Волшебный Ключ пропал. Королевство выбрало вас.</p>
+
+<div class="clocks" id="clocks"></div>
+<div class="hero empty" id="hero">Героя ещё не выбрали. Откройте первый свиток.</div>
+<div id="list"></div>
+<p class="note">Стесняетесь камеры? Любое задание можно выполнить голосом или фото.</p>
+
+<script src="https://cdn.jsdelivr.net/npm/@vkontakte/vk-bridge@2.15.2/dist/browser.min.js"></script>
+<script>
+/* ===== НАСТРОЙКИ (меняйте здесь) ===== */
+var CONFIG = {
+  start: new Date(2026, 9, 26),           // 26 октября 2026, первое задание
+  sendUrl: 'https://vk.com/im',           // сюда вставьте ссылку на ваш чат или диалог в VK, куда герои шлют ответы
+  zones: [
+    { name: 'Челябинск', t: Date.UTC(2026, 11, 31, 19, 0, 0) }, // полночь UTC+5
+    { name: 'Иордания',  t: Date.UTC(2026, 11, 31, 21, 0, 0) }  // полночь UTC+3
+  ]
+};
+
+/* ===== ЗАДАНИЯ: [акт, название, формат, текст] ===== */
+/* формат: g = голос, f = фото, v = видео до 15 сек (по желанию), a = в приложении */
+var TASKS = [
+ ['Зов Королевства','Клятва героя','g','Назовите имя героя и произнесите три фразы клятвы верности Королевству. Торжественно!'],
+ ['Зов Королевства','Испытание героя','a','Ответьте на три вопроса, и Хроники назовут ваш героический класс.'],
+ ['Зов Королевства','Портрет для Хроник','f','Сделайте фото с героическим взглядом вдаль. Плащ из пледа приветствуется.'],
+ ['Зов Королевства','Тайное заклинание','g','Придумайте заклинание из трёх слов. Скажите его шёпотом, потом громко.'],
+ ['Зов Королевства','Оружие героя','f','Найдите дома предмет-оружие и дайте ему эпичное имя. Пришлите фото и имя.'],
+ ['Зов Королевства','Странный шум','g','В ночь пропажи Ключа вы слышали странный шум. Опишите его голосом.'],
+ ['Расследование','Допрос свидетеля','g','Где вы были в ночь пропажи Ключа? Отвечайте уверенно, ведь Хроники всё запишут.'],
+ ['Расследование','Подозреваемый','f','Найдите дома самый подозрительный предмет или существо. Сфотографируйте.'],
+ ['Расследование','Тень в углу','v','Вы заметили тень. Покажите испуг: видео 5 секунд или просто громкий крик.'],
+ ['Расследование','Шифр Летописца','a','Расшифруйте послание. Подсказки появятся в Хрониках ближе к делу.'],
+ ['Расследование','Тост в трактире','g','Поднимите кружку и произнесите тост за героев Королевства.'],
+ ['Расследование','Кто предатель?','g','Назовите, кого подозреваете среди героев, и объясните голосом почему.'],
+ ['Расследование','Слово с интонацией','g','Летописец пришлёт вам одну фразу. Запишите её так, как он скажет: злобно, шёпотом или радостно.'],
+ ['Расследование','Карта Королевства','f','Сфотографируйте вид из окна. Это неизведанные земли.'],
+ ['Расследование','Тайный дар','g','Скажите комплимент любому другому герою. Только искренне.'],
+ ['Испытания','Танец победы','v','Покажите танец победы или походку героя: 10 секунд, видео или фото в движении.'],
+ ['Испытания','Зелье','f','Приготовьте напиток и опишите его магические свойства. Пришлите фото.'],
+ ['Испытания','Битва с драконом','v','Сразитесь с подушкой или зарычите как дракон. Видео или голос.'],
+ ['Испытания','Письмо в 2027','g','Запишите послание герою, который будет читать его через год.'],
+ ['Испытания','Раскрытие предателя','a','Хроники объявят, кого заподозрили больше всего. Выслушайте приговор.'],
+ ['Испытания','Припасы для похода','g','Назовите три предмета, без которых вы не отправитесь в финальный поход.'],
+ ['Финальный поход','Общее заклинание','v','Летописец пришлёт общую фразу. Запишите её голосом или видео.'],
+ ['Финальный поход','Слово Новому году','g','Скажите Новому году одну искреннюю фразу, 15 секунд.'],
+ ['Финальный поход','Последний сигнал','v','Скажите в камеру или голосом: «Мы идём». Остальное увидите в финале.']
+];
+var HOW = { g:'голосом', f:'фото', v:'видео или голосом', a:'в приложении' };
+var TEST = [
+ ['Перед вами тёмный лес. Что делаете?',['Иду вперёд с мечом','Ищу тропу по карте','Достаю книгу заклинаний','Пою, чтобы не бояться']],
+ ['Ваша главная суперсила?',['Храбрость','Чутьё','Мудрость','Обаяние']],
+ ['Чего боитесь больше всего?',['Опозориться в бою','Заблудиться','Что кончится магия','Что некому будет слушать']]
+];
+var CLASSES = [
+ ['Рыцарь Печального Мандарина','Идёте напролом и редко жалеете об этом.'],
+ ['Следопыт Закрытых Дверей','Находите путь там, где его нет.'],
+ ['Чародей Громкого Шёпота','Знаете больше, чем говорите.'],
+ ['Бард Последнего Куплета','Без вас ни один поход не обходится.']
+];
+
+/* ===== СОСТОЯНИЕ ===== */
+var bridge = window.vkBridge || null;
+var state = { done: {}, hero: null };
+var preview = /preview/.test(location.search);   // ?preview=1 открывает все задания (для вас)
+var answers = [];
+
+function save() {
+  var s = JSON.stringify(state);
+  try { localStorage.setItem('chronicles', s); } catch (e) {}
+  try { bridge && bridge.send('VKWebAppStorageSet', { key: 'chronicles', value: s }); } catch (e) {}
+}
+function load(cb) {
+  try { var l = localStorage.getItem('chronicles'); if (l) state = JSON.parse(l); } catch (e) {}
+  if (!bridge) return cb();
+  try {
+    bridge.send('VKWebAppInit');
+    bridge.send('VKWebAppStorageGet', { keys: ['chronicles'] }).then(function (r) {
+      var v = r.keys && r.keys[0] && r.keys[0].value;
+      if (v) { try { state = JSON.parse(v); } catch (e) {} }
+      cb();
+    }).catch(cb);
+  } catch (e) { cb(); }
+}
+function openLink(url) {
+  try { if (bridge) { bridge.send('VKWebAppOpenLink', { url: url }); return; } } catch (e) {}
+  window.open(url, '_blank');
+}
+
+/* ===== ТАЙМЕРЫ ===== */
+function tick() {
+  var now = Date.now(), html = '';
+  CONFIG.zones.forEach(function (z) {
+    var d = Math.max(0, z.t - now), s = Math.floor(d / 1000);
+    var dd = Math.floor(s / 86400), hh = Math.floor(s % 86400 / 3600), mm = Math.floor(s % 3600 / 60);
+    html += '<div class="clock"><small>Полночь: ' + z.name + '</small><b>' + dd + ' д ' + hh + ' ч ' + mm + ' мин</b></div>';
+  });
+  document.getElementById('clocks').innerHTML = html;
+}
+
+/* ===== ИНТЕРФЕЙС ===== */
+function unlockDate(i) {
+  var off = Math.floor(i / 3) * 7 + [0, 2, 4][i % 3];
+  var s = CONFIG.start;
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate() + off);
+}
+function fmt(d) { return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }); }
+
+function renderHero() {
+  var h = document.getElementById('hero');
+  if (state.hero == null) { h.className = 'hero empty'; h.textContent = 'Героя ещё не выбрали. Пройдите испытание героя.'; return; }
+  h.className = 'hero'; h.innerHTML = 'Вы — <b>' + CLASSES[state.hero][0] + '</b><br><small>' + CLASSES[state.hero][1] + '</small>';
+}
+
+function render() {
+  var now = new Date(), open = [], next = null;
+  TASKS.forEach(function (t, i) {
+    var u = unlockDate(i);
+    if (preview || now >= u) open.push(i); else if (!next) next = i;
+  });
+  var html = '';
+  if (next != null) {
+    html += '<div class="seal"><div class="wax">✦</div><div>Следующий свиток закрыт печатью Летописца. Печать падёт ' + fmt(unlockDate(next)) + '.</div></div>';
+  }
+  open.reverse().forEach(function (i) {
+    var t = TASKS[i], done = state.done[i];
+    html += '<section class="scroll' + (done ? ' done' : '') + (i === open[0] && !done ? ' fresh' : '') + '">' +
+      '<div class="act">' + t[0] + ', свиток ' + (i + 1) + '</div><h2>' + t[1] + '</h2>' +
+      '<div class="how">' + HOW[t[2]] + '</div><p>' + t[3] + '</p><div class="row">';
+    if (t[2] === 'a' && i === 1) html += '<button onclick="startTest()">' + (state.hero == null ? 'Пройти испытание' : 'Пройти заново') + '</button>';
+    else if (t[2] !== 'a') html += '<button onclick="openLink(CONFIG.sendUrl)">Отправить Летописцу</button>';
+    html += '<button class="alt" onclick="toggle(' + i + ')">' + (done ? 'Вернуть в работу' : 'Выполнено') + '</button></div>';
+    if (i === 1) html += '<div id="test"></div>';
+    html += '</section>';
+  });
+  if (!open.length) html += '<div class="seal"><div class="wax">✦</div><div>Первый свиток развернётся ' + fmt(unlockDate(0)) + '. Герои, готовьтесь.</div></div>';
+  document.getElementById('list').innerHTML = html;
+  renderHero();
+}
+
+function toggle(i) { state.done[i] = !state.done[i]; save(); render(); }
+
+function startTest() { answers = []; showQ(0); }
+function showQ(n) {
+  var box = document.getElementById('test');
+  if (!box) return;
+  if (n >= TEST.length) { finishTest(); return; }
+  var q = TEST[n], h = '<div class="q"><strong>' + (n + 1) + ' из ' + TEST.length + '. ' + q[0] + '</strong>';
+  q[1].forEach(function (o, k) { h += '<button class="opt" onclick="pick(' + n + ',' + k + ')">' + o + '</button>'; });
+  box.innerHTML = h + '</div>';
+}
+function pick(n, k) { answers[n] = k; showQ(n + 1); }
+function finishTest() {
+  var c = [0, 0, 0, 0];
+  answers.forEach(function (a) { c[a]++; });
+  var best = 0; c.forEach(function (v, i) { if (v > c[best]) best = i; });
+  state.hero = best; state.done[1] = true; save(); render();
+}
+
+load(function () { render(); tick(); setInterval(tick, 30000); });
+</script>
+</body>
+</html>
